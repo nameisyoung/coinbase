@@ -1,8 +1,9 @@
 /**
  * Coinbase client side for CMPE 172 Midterm.
- * @Version 1.0
+ * @version 1.1
  * @author Younggun Chung <nameisyoung@gmail.com>
  * Due: Oct 22, 2016
+ * @note V.1.1 - Oct 26, 2016: Changed readline to REPL
  */
 
 var request = require('request');
@@ -10,7 +11,7 @@ var _ = require('underscore');
 var csv = require('fast-csv');
 var fs = require('fs');
 var repl = require('repl');
-var readline = require('readline');
+//var readline = require('readline');
 
 var base_url = 'https://api.coinbase.com/v1/';
 var filename = 'coinbase_order_history.csv';
@@ -150,7 +151,8 @@ function menuSell(line){
 
 /** Input: ORDER */
 function menuOrder(line){
-  console.log(' Current BTC/USD: ' + getExchangeRateCurrencyToBTC());
+  //console.log(' Current BTC/USD: ' + getExchangeRateCurrencyToBTC());
+  console.log(' ***** Current Orders *****');
   orderCalculrater(orderHistory);
   // _.each(orderHistory, function(orders){
   //   orderPrint(orders);
@@ -229,39 +231,45 @@ function orderCalculrater(orderHistory){
     orderPrint(orders);       // Display content of the order
   });
   csvStream.end();
+  console.log(' **************************\n');
 } // orderCalculrater(function)
 
 
 /****
 * Tiny CLI by Readline.
-* Note: Tried to use REPL in first version. However, I had trouble with function call such as BUY, SELL, and ORDER.
-        So I changed REPL to readline.
+* Note: * Oct 22, 2016
+          - Tried to use REPL in first version. However, I had trouble with function call such as BUY, SELL, and ORDER.
+            So I changed REPL to readline.
+        * Oct 26, 2016
+          - REPL issue fixed.
+          - Next update will move outside functions into REPL (async).
 * References:
     EC6: https://nodejs.org/api/readline.html#readline_example_tiny_cli
     EC5: http://node.readthedocs.io/en/latest/api/readline/#example-tiny-cli
 ****/
-rl = readline.createInterface(process.stdin, process.stdout);
-rl.setPrompt('coinbase> ');
-rl.prompt();
+repl.start({
+  prompt: 'coinbase> ',
+  eval: function(cmd, context, filename, callback) {
+    var line = cmd.replace('\n', '');
 
-rl.on('line', function(line) {
-  switch(line.split(' ')[0]) {
-    case 'BUY':
-      menuBuy(line);
-      break;
-    case 'SELL':
-      menuSell(line);
-      break;
-    case 'ORDERS':
-      menuOrder();
-      break;
-    default:
-      console.log('Invalid input found, ignoring request.');
-      console.log(' Options: BUY, SELL, ORDERS\n');
-      break;
+    switch(line.split(' ')[0]){
+      case 'BUY':
+        menuBuy(line);
+        callback();
+        break;
+      case 'SELL':
+        menuSell(line);
+        callback();
+        break;
+      case 'ORDERS':
+        menuOrder();
+        callback();
+        break;
+      default:
+        console.log(' Invalid input found, ignoring request.');
+        console.log(' Options: BUY, SELL, ORDERS\n');
+        callback();
+        break;
+    }
   }
-  rl.prompt();
-}).on('close', function() {
-  console.log(' Have a great day!\n');
-  process.exit(0);
 });
